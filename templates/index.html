@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block admin_content %}
+<div class="bg-white shadow rounded-lg p-6 mb-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Warehouse Dashboard</h1>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Total Products -->
+        <a href="{{ url_for('view_inventory') }}" class="bg-blue-500 text-white rounded-lg shadow p-6 flex items-center hover:bg-blue-600 transition-colors">
+            <div class="p-3 rounded-full bg-blue-700 mr-4 flex items-center justify-center">
+                <i class="fas fa-box-open text-2xl"></i>
+            </div>
+            <div>
+                <p class="text-sm">Total Products</p>
+                <p class="text-2xl font-semibold">{{ total_products }}</p>
+            </div>
+        </a>
+        <!-- Alerts -->
+        <div class="bg-red-500 text-white rounded-lg shadow p-6 flex items-center cursor-pointer" onclick="openAlertModal()">
+            <div class="p-3 rounded-full bg-red-700 mr-4 flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
+            </div>
+            <div>
+                <p class="text-sm">Alerts</p>
+                <p class="text-2xl font-semibold">{{ alerts }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Recent Activities</h2>
+        <ul class="space-y-4">
+            {% for activity in recent_activities %}
+                <li class="flex items-start">
+                    <div class="flex-shrink-0">
+                        {% if 'Add Product' in activity.action %}
+                            <i class="fas fa-plus-circle h-6 w-6 text-green-500"></i>
+                        {% elif 'Delete Product' in activity.action %}
+                            <i class="fas fa-trash-alt h-6 w-6 text-red-500"></i>
+                        {% elif 'Edit Product' in activity.action %}
+                            <i class="fas fa-edit h-6 w-6 text-yellow-500"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle h-6 w-6 text-gray-500"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-800 text-sm">{{ activity.action }}</p>
+                        <p class="text-xs text-gray-500">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        <p class="text-xs text-gray-500">{{ activity.details }}</p>
+                        {% if activity.item_details %}
+                            <p class="text-xs text-gray-600">Model: {{ activity.item_details.model }}</p>
+                            <p class="text-xs text-gray-600">Color: {{ activity.item_details.color }}</p>
+                            <p class="text-xs text-gray-600">Memory: {{ activity.item_details.memory }}</p>
+                            <p class="text-xs text-gray-600">Serial Number: {{ activity.item_details.serial_number }}</p>
+                        {% else %}
+                            <p class="text-xs text-gray-600">Item details not found, might be deleted by Admin.</p>
+                        {% endif %}
+                    </div>
+                </li>
+            {% else %}
+                <li class="text-sm text-gray-500">No recent activities found.</li>
+            {% endfor %}
+        </ul>
+
+        <!-- Pagination Controls -->
+        <div class="flex justify-center mt-6">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('index', page=pagination.prev_num) }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-l-md hover:bg-gray-300">Previous</a>
+            {% endif %}
+            <span class="px-4 py-2 bg-gray-100 text-gray-700 border-t border-b">{{ pagination.page }} of {{ pagination.pages }}</span>
+            {% if pagination.has_next %}
+                <a href="{{ url_for('index', page=pagination.next_num) }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-r-md hover:bg-gray-300">Next</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div id="alertModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-3/4 md:w-1/2">
+        <div class="flex justify-between items-center border-b p-4">
+            <h3 class="text-lg font-semibold">Items with Invalid Attributes</h3>
+            <button onclick="closeAlertModal()" class="text-gray-600 hover:text-gray-900">&times;</button>
+        </div>
+        <div class="p-4">
+            {% if alert_items %}
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr>
+                            <th class="py-2">Model</th>
+                            <th class="py-2">Color</th>
+                            <th class="py-2">Memory</th>
+                            <th class="py-2">Serial Number</th>
+                            <th class="py-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in alert_items %}
+                        <tr>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.model not in item.VALID_MODELS else 'bg-green-100' }}">{{ item.model }}</td>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.color not in item.VALID_COLORS else 'bg-green-100' }}">{{ item.color }}</td>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.memory not in item.VALID_MEMORIES else 'bg-green-100' }}">{{ item.memory }}</td>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.serial_number|length != 11 else 'bg-green-100' }}">
+                                {{ item.serial_number }}
+                            </td>
+                            <td class="border px-4 py-2">
+                                {% if current_user.has_role('admin') %}
+                                    <button onclick="openEditModal({{ item.id }}, '{{ item.model }}', '{{ item.color }}', '{{ item.memory }}', '{{ item.serial_number }}')" class="bg-blue-500 text-white px-2 py-1 rounded">Edit</button>
+                                    <button onclick="deleteItem({{ item.id }})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                                {% else %}
+                                    <span class="text-gray-500">No actions available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="flex items-center justify-center text-green-500">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>No alerts or issues. Everything is running smoothly!</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div id="productModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 id="modalTitle" class="text-lg leading-6 font-medium text-gray-900">Add New Product</h3>
+            <form id="productForm" method="POST" action="{{ url_for('manage_products') }}">
+                {{ form.hidden_tag() }}
+                <div class="mt-2">
+                    <!-- Slideshow for iPhone models -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Model</label>
+                        <div class="relative">
+                            <div class="flex items-center justify-center">
+                                <button type="button" class="absolute left-0" onclick="prevSlide()">&#10094;</button>
+                                <img id="modelImage" src="{{ url_for('static', filename='images/iphone14_black.jpg') }}" alt="iPhone Model" class="max-w-full max-h-40 object-contain rounded-md">
+                                <button type="button" class="absolute right-0" onclick="nextSlide()">&#10095;</button>
+                            </div>
+                            <p id="modelName" class="mt-2 text-center text-sm font-medium text-gray-700">iPhone 14</p>
+                            <input type="hidden" name="model" id="modelInput" value="iPhone 14">
+                        </div>
+                    </div>
+                    <!-- Color Selection -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-medium text-gray-700 text-center">Color</label>
+                        <div class="flex justify-center space-x-2 mt-2">
+                            <div id="colorBlack" class="w-8 h-8 bg-black border-2 cursor-pointer hover:scale-110 transition-transform {{ 'border-blue-500' if currentColor == 'Black' else 'border-gray-300' }}" onclick="selectColor('Black')"></div>
+                            <div id="colorRed" class="w-8 h-8 bg-red-500 border-2 cursor-pointer hover:scale-110 transition-transform {{ 'border-blue-500' if currentColor == 'Red' else 'border-gray-300' }}" onclick="selectColor('Red')"></div>
+                            <div id="colorWhite" class="w-8 h-8 bg-white border-2 cursor-pointer hover:scale-110 transition-transform {{ 'border-blue-500' if currentColor == 'White' else 'border-gray-300' }}" onclick="selectColor('White')"></div>
+                        </div>
+                        <p id="colorName" class="mt-2 text-xs font-medium text-gray-700 text-center">Selected Color: Black</p>
+                        <input type="hidden" name="color" id="colorInput" value="Black">
+                    </div>
+                    <!-- Memory Selection -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-medium text-gray-700 text-center">Memory</label>
+                        <div class="flex justify-center space-x-2 mt-2">
+                            <div id="memory64GB" class="w-12 h-8 bg-gray-200 border-2 cursor-pointer flex items-center justify-center hover:scale-110 transition-transform text-xs {{ 'border-blue-500' if currentMemory == '64GB' else 'border-gray-300' }}" onclick="selectMemory('64GB')">64GB</div>
+                            <div id="memory128GB" class="w-12 h-8 bg-gray-200 border-2 cursor-pointer flex items-center justify-center hover:scale-110 transition-transform text-xs {{ 'border-blue-500' if currentMemory == '128GB' else 'border-gray-300' }}" onclick="selectMemory('128GB')">128GB</div>
+                            <div id="memory256GB" class="w-12 h-8 bg-gray-200 border-2 cursor-pointer flex items-center justify-center hover:scale-110 transition-transform text-xs {{ 'border-blue-500' if currentMemory == '256GB' else 'border-gray-300' }}" onclick="selectMemory('256GB')">256GB</div>
+                            <div id="memory512GB" class="w-12 h-8 bg-gray-200 border-2 cursor-pointer flex items-center justify-center hover:scale-110 transition-transform text-xs {{ 'border-blue-500' if currentMemory == '512GB' else 'border-gray-300' }}" onclick="selectMemory('512GB')">512GB</div>
+                        </div>
+                        <p id="memoryName" class="mt-2 text-xs font-medium text-gray-700 text-center">Selected Memory: None</p>
+                        <input type="hidden" name="memory" id="memoryInput" value="">
+                    </div>
+                    <!-- Serial Number Input -->
+                    <div class="mb-4">
+                        {{ form.serial_number.label(class="block text-xs font-medium text-gray-700 text-center") }}
+                        {{ form.serial_number(class="mt-1 block w-full shadow-sm sm:text-xs border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500", maxlength="11") }}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    {{ form.submit(class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded") }}
+                    <button type="button" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" onclick="toggleModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal with Comment -->
+<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Deletion</h3>
+            <p class="mt-2 text-sm text-gray-500">Are you sure you want to delete this product?</p>
+            <textarea id="deleteComment" class="mt-2 w-full border rounded-md p-2" placeholder="Add a comment (optional)"></textarea>
+            <div class="mt-2">
+                <select id="deleteReason" class="w-full border rounded-md p-2">
+                    <option value="">Select a reason (optional)</option>
+                    <option value="Outdated product">Outdated product</option>
+                    <option value="Incorrect entry">Incorrect entry</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="mt-4">
+                <button id="confirmDelete" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</button>
+                <button type="button" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" onclick="toggleDeleteModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAlertModal() {
+        document.getElementById('alertModal').classList.remove('hidden');
+    }
+
+    function closeAlertModal() {
+        document.getElementById('alertModal').classList.add('hidden');
+    }
+
+    function editItem(itemId) {
+        const serialNumber = document.getElementById(`serial-${itemId}`).value;
+        fetch(`/admin/products/edit/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ serial_number: serialNumber })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Item updated successfully.');
+                location.reload();
+            } else {
+                alert('Failed to update the item.');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function deleteItem(itemId) {
+        if (confirm('Are you sure you want to delete this item?')) {
+            fetch(`/admin/products/delete/${itemId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Item deleted successfully.');
+                    location.reload();
+                } else {
+                    alert('Failed to delete the item.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Add/Edit Product Modal Functions
+    let currentSlide = 0;
+    let currentColor = 'Black';
+    let currentMemory = '';
+    const models = [
+        { name: 'iPhone 12', image: 'iphone12' },
+        { name: 'iPhone 12 Pro', image: 'iphone12pro' },
+        { name: 'iPhone 13', image: 'iphone13' },
+        { name: 'iPhone 13 Pro', image: 'iphone13pro' },
+        { name: 'iPhone 14', image: 'iphone14' },
+        { name: 'iPhone 14 Pro', image: 'iphone14pro' },
+    ];
+
+    function showSlide(index) {
+        const modelImage = document.getElementById('modelImage');
+        const modelInput = document.getElementById('modelInput');
+        const modelName = document.getElementById('modelName');
+        currentSlide = (index + models.length) % models.length;
+        updateImage();
+        modelInput.value = models[currentSlide].name;
+        modelName.textContent = models[currentSlide].name;
+    }
+
+    function nextSlide() {
+        showSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+        showSlide(currentSlide - 1);
+    }
+
+    function toggleModal(mode = 'add') {
+        const modal = document.getElementById('productModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const form = document.getElementById('productForm');
+        if (mode === 'add') {
+            modalTitle.textContent = 'Add New Product';
+            form.action = "{{ url_for('manage_products') }}";
+            form.reset();
+            currentSlide = 0; // Reset to the first model
+            currentColor = 'Black'; // Reset to default color
+            currentMemory = ''; // Reset to no memory selected
+            showSlide(currentSlide);
+            selectColor(currentColor);
+            selectMemory(currentMemory);
+        }
+        modal.classList.toggle('hidden');
+    }
+
+    function openEditModal(id, model, color, memory, serialNumber) {
+        const modal = document.getElementById('productModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const form = document.getElementById('productForm');
+        modalTitle.textContent = 'Edit Product';
+        form.action = `/admin/products/edit/${id}`;
+        form.model.value = model;
+        form.color.value = color;
+        form.memory.value = memory;
+        form.serial_number.value = serialNumber;
+        currentSlide = models.findIndex(m => m.name === model); // Find the index of the model
+        currentColor = color; // Set the current color
+        currentMemory = memory; // Set the current memory
+        showSlide(currentSlide); // Show the correct slide
+        selectColor(currentColor); // Set the correct color
+        selectMemory(currentMemory); // Set the correct memory
+        modal.classList.remove('hidden');
+    }
+
+    function selectColor(color) {
+        const colorInput = document.getElementById('colorInput');
+        const colorName = document.getElementById('colorName');
+        currentColor = color;
+        colorInput.value = color;
+        colorName.textContent = `Selected Color: ${color}`;
+        updateImage();
+    }
+
+    function updateImage() {
+        const modelImage = document.getElementById('modelImage');
+        const model = models[currentSlide].image;
+        modelImage.src = `/static/images/${model}_${currentColor.toLowerCase()}.jpg`;
+    }
+
+    function selectMemory(memory) {
+        const memoryInput = document.getElementById('memoryInput');
+        const memoryName = document.getElementById('memoryName');
+        currentMemory = memory;
+        memoryInput.value = memory;
+        memoryName.textContent = `Selected Memory: ${memory}`;
+    }
+
+    function toggleDeleteModal(itemId = null) {
+        const modal = document.getElementById('deleteModal');
+        modal.classList.toggle('hidden');
+        if (itemId) {
+            document.getElementById('confirmDelete').setAttribute('data-item-id', itemId);
+            // Clear previous inputs
+            document.getElementById('deleteComment').value = '';
+            document.getElementById('deleteReason').selectedIndex = 0;
+        }
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    }
+
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        const itemId = this.getAttribute('data-item-id');
+        const comment = document.getElementById('deleteComment').value;
+        const reason = document.getElementById('deleteReason').value;
+        const data = { comment, reason };
+
+        // Get CSRF token
+        const csrfToken = getCSRFToken();
+
+        fetch(`/admin/products/delete/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken  // Include CSRF token in headers
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if (response.status === 204) {  // 204 No Content
+                window.location.reload();
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to delete the product.');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the product: ' + error.message);
+        });
+    });
+</script>
+{% endblock %}

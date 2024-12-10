@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Edit Product</h1>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div>
+        {{ form.model.label }} {{ form.model(size=32) }}
+    </div>
+    <div>
+        {{ form.color.label }} {{ form.color(size=32) }}
+    </div>
+    <div>
+        {{ form.memory.label }} {{ form.memory(size=32) }}
+    </div>
+    <div>
+        {{ form.serial_number.label }} {{ form.serial_number(size=32) }}
+    </div>
+    <div>
+        {{ form.submit() }}
+    </div>
+</form>
+{% endblock %} 

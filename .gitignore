@@ -1,0 +1,83 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Flask specific
+instance/
+*.db
+*.sqlite3
+
+# Pytest
+.cache/
+
+# IDEs and Editors
+.idea/
+.vscode/
+.sublime-project
+.sublime-workspace
+.spyderproject
+.spyproject
+.ropeproject
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Alembic
+migrations/versions/*.pyc
+
+# Local environment variables
+.env
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Type Checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# Celery beat schedule file
+celerybeat-schedule
+
+# Documentation
+/site
+
+# Temporary files
+*~
+
+# Vim swap files
+*.swp

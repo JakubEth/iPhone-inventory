@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block admin_content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Inventory</h2>
+    
+    <!-- Dropdown for selecting model -->
+    <div class="mb-4">
+        <label for="modelSelect" class="block text-sm font-medium text-gray-700">Select Model</label>
+        <select id="modelSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+            <option value="">All Models</option>
+            {% for model in unique_models %}
+            <option value="{{ model }}">{{ model }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Inventory Panel -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Inventory Items</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">List of all available items in the inventory.</p>
+        </div>
+        <div class="border-t border-gray-200 overflow-auto max-h-96">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Model
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Color
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Memory
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Serial Number
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryTable" class="divide-y divide-gray-200">
+                    {% for item in items %}
+                    <tr class="hover:bg-gray-100" data-model="{{ item.model }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ item.model }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.color }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.memory }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.serial_number }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+            <!-- Pagination Controls -->
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('view_inventory', page=pagination.prev_num) }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-l-md hover:bg-gray-300">Previous</a>
+            {% endif %}
+            <span class="px-4 py-2 bg-gray-100 text-gray-700 border-t border-b">{{ pagination.page }} of {{ pagination.pages }}</span>
+            {% if pagination.has_next %}
+                <a href="{{ url_for('view_inventory', page=pagination.next_num) }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-r-md hover:bg-gray-300">Next</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('modelSelect').addEventListener('change', function() {
+        var selectedModel = this.value;
+        var rows = document.querySelectorAll('#inventoryTable tr');
+        rows.forEach(function(row) {
+            if (selectedModel === "" || row.getAttribute('data-model') === selectedModel) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %} 

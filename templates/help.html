@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Help - IPhone Inventory{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 mt-8">
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">Help & Support</h1>
+        <p class="text-gray-700 mb-6">Welcome to the Help Center. Here you can find answers to common questions and get support for using the IPhone Inventory application.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Technical Support Card -->
+            <div class="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow duration-300">
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-headset text-blue-500 text-2xl mr-3"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800">Technical Support</h2>
+                </div>
+                <p class="text-gray-600 mb-4">For any technical issues or inquiries, please reach out to our support team.</p>
+                <a href="{{ url_for('contact') }}" class="text-blue-500 hover:underline">Email Support <i class="fas fa-arrow-right ml-1"></i></a>
+            </div>
+            
+            <!-- FAQ Card -->
+            <div class="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow duration-300">
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-question-circle text-green-500 text-2xl mr-3"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800">Frequently Asked Questions (FAQ)</h2>
+                </div>
+                <p class="text-gray-600 mb-4">Find answers to the most common questions about using the IPhone Inventory application.</p>
+                <a href="{{ url_for('faq') }}" class="text-green-500 hover:underline">Visit FAQ Page <i class="fas fa-arrow-right ml-1"></i></a>
+            </div>
+            
+            <!-- User Guide Card -->
+            <div class="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow duration-300">
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-book text-purple-500 text-2xl mr-3"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800">User Guide</h2>
+                </div>
+                <p class="text-gray-600 mb-4">Access our detailed user guide to learn how to make the most out of the IPhone Inventory application.</p>
+                <a href="{{ url_for('user_guide') }}" class="text-purple-500 hover:underline">Read User Guide <i class="fas fa-arrow-right ml-1"></i></a>
+            </div>
+            
+            <!-- Feedback Card -->
+            <div class="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow duration-300">
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-comments text-yellow-500 text-2xl mr-3"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800">Give Feedback</h2>
+                </div>
+                <p class="text-gray-600 mb-4">We value your feedback! Let us know how we can improve the IPhone Inventory application.</p>
+                <a href="#" class="text-yellow-500 hover:underline" onclick="openModal('feedbackModal')">Provide Feedback <i class="fas fa-arrow-right ml-1"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

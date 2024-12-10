@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IPhone Inventory{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        /* Custom CSS to ensure the footer sticks to the bottom */
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+        }
+        .progress-bar {
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.8);
+            transition: width 5s linear;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal flex flex-col min-h-screen">
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div>
+                        <a href="{{ url_for('index') }}" class="flex items-center py-4 px-2">
+                            <i class="fab fa-apple text-blue-500 text-2xl mr-2"></i>
+                            <span class="font-semibold text-gray-500 text-lg">IPhone Inventory</span>
+                        </a>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('generate_reports') }}" class="flex items-center py-4 px-2 hover:text-blue-500">
+                            <i class="fas fa-chart-bar text-xl mr-2"></i>
+                            <span class="font-semibold text-gray-500 text-lg">Reports</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-1">
+                    <form action="{{ url_for('search') }}" method="GET" class="flex">
+                        <input type="text" name="query" placeholder="Search items..." class="px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600">
+                            <i class="fas fa-search h-5 w-5 inline"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="flex items-center space-x-3">
+                    {% if current_user.is_authenticated %}
+                        <span class="text-gray-700">Hello, <strong>{{ current_user.email }}</strong>!</span>
+                        <a href="{{ url_for('logout') }}" class="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-100">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="px-3 py-2 rounded-md text-sm font-medium text-green-600 hover:bg-green-100">Login</a>
+                        <a href="{{ url_for('signup') }}" class="px-3 py-2 rounded-md text-sm font-medium text-blue-600 hover:bg-blue-100">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 mt-4 content flex-grow mb-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flex flex-col space-y-4 fixed top-4 right-4 z-50">
+                    {% for category, message in messages %}
+                        <div class="flex items-center px-4 py-3 rounded-md shadow-md bg-{{ 'green' if category == 'success' else 'red' }}-500 text-white relative" role="alert">
+                            <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' }} h-6 w-6 mr-2"></i>
+                            <span>{{ message }}</span>
+                            <div class="progress-bar absolute bottom-0 left-0 w-full"></div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}
+            <div class="flex">
+                <aside class="w-64 bg-white shadow-md rounded-lg p-4" style="position: sticky; top: 0; height: 55vh; overflow-y: auto;">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-800">Admin Panel</h2>
+                    <nav>
+                        <ul>
+                            <li class="mb-4">
+                                <a href="{{ url_for('index') }}" class="block py-2 px-4 rounded hover:bg-gray-100 flex items-center">
+                                    <i class="fas fa-tachometer-alt h-5 w-5 text-gray-600 mr-3"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="mb-4">
+                                <a href="{{ url_for('view_inventory') }}" class="block py-2 px-4 rounded hover:bg-gray-100 flex items-center">
+                                    <i class="fas fa-boxes h-5 w-5 text-gray-600 mr-3"></i>
+                                    View Inventory
+                                </a>
+                            </li>
+                            <li class="mb-4">
+                                <a href="{{ url_for('manage_products') }}" class="block py-2 px-4 rounded hover:bg-gray-100 flex items-center">
+                                    <i class="fas fa-cogs h-5 w-5 text-gray-600 mr-3"></i>
+                                    Manage Products
+                                </a>
+                            </li>
+                            <li class="mb-4">
+                                <a href="{{ url_for('manage_users') }}" class="block py-2 px-4 rounded hover:bg-gray-100 flex items-center">
+                                    <i class="fas fa-users h-5 w-5 text-gray-600 mr-3"></i>
+                                    Manage Users
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <div class="mt-8 border-t pt-4">
+                        <ul class="text-sm text-gray-500">
+                            <li class="mb-2">
+                                <a href="#" class="flex items-center hover:text-gray-700" onclick="openModal('bugModal')">
+                                    <i class="fas fa-bug mr-2"></i> Report a Bug
+                                </a>
+                            </li>
+                            <li class="mb-2">
+                                <a href="#" class="flex items-center hover:text-gray-700" onclick="openModal('feedbackModal')">
+                                    <i class="fas fa-comment-dots mr-2"></i> Feedback
+                                </a>
+                            </li>
+                            <li class="mb-2">
+                                <a href="{{ url_for('help') }}" class="flex items-center hover:text-gray-700">
+                                    <i class="fas fa-question-circle mr-2"></i> Help
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+
+                <main class="flex-1 pl-5">
+                    {% block admin_content %}
+                    {% endblock %}
+                </main>
+            </div>
+        {% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white shadow mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <p class="text-sm text-gray-500">&copy; 2024 IPhone Inventory. All rights reserved.</p>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('privacy_policy') }}" class="text-gray-500 hover:text-gray-900">Privacy Policy</a>
+                    <a href="{{ url_for('terms_of_service') }}" class="text-gray-500 hover:text-gray-900">Terms of Service</a>
+                    <a href="{{ url_for('contact') }}" class="text-gray-500 hover:text-gray-900">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Report a Bug Modal -->
+    <div id="bugModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-lg w-3/4 md:w-1/2">
+            <div class="flex justify-between items-center border-b p-4">
+                <h3 class="text-lg font-semibold">Report a Bug</h3>
+                <button onclick="closeModal('bugModal')" class="text-gray-600 hover:text-gray-900">&times;</button>
+            </div>
+            <div class="p-4">
+                <form id="bugForm" method="POST" action="{{ url_for('report_bug') }}">
+                    {{ bug_form.hidden_tag() }}
+                    <div class="mb-4">
+                        {{ bug_form.bug_details.label(class="block text-gray-700 text-sm font-bold mb-2") }}
+                        {{ bug_form.bug_details(class="w-full border rounded-md p-2", placeholder="Describe the bug...") }}
+                    </div>
+                    <div class="mt-4">
+                        {{ bug_form.submit(class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded") }}
+                        <button type="button" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" onclick="closeModal('bugModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-lg w-3/4 md:w-1/2">
+            <div class="flex justify-between items-center border-b p-4">
+                <h3 class="text-lg font-semibold">Feedback</h3>
+                <button onclick="closeModal('feedbackModal')" class="text-gray-600 hover:text-gray-900">&times;</button>
+            </div>
+            <div class="p-4">
+                <form id="feedbackForm" method="POST" action="{{ url_for('feedback') }}">
+                    {{ feedback_form.hidden_tag() }}
+                    <div class="mb-4">
+                        {{ feedback_form.feedback_details.label(class="block text-gray-700 text-sm font-bold mb-2") }}
+                        {{ feedback_form.feedback_details(class="w-full border rounded-md p-2", placeholder="Your feedback...") }}
+                    </div>
+                    <div class="mt-4">
+                        {{ feedback_form.submit(class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded") }}
+                        <button type="button" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" onclick="closeModal('feedbackModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for link obfuscation -->
+    <script>
+        // Function to encode a string to Base64
+        function encodeBase64(str) {
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+
+        // Function to decode a Base64 string
+        function decodeBase64(str) {
+            return decodeURIComponent(escape(atob(str)));
+        }
+
+        // Obfuscate all links on the page
+        document.addEventListener('DOMContentLoaded', function() {
+            const links = document.querySelectorAll('a');
+            links.forEach(link => {
+                const originalHref = link.getAttribute('href');
+                if (originalHref && !originalHref.startsWith('#')) {
+                    const encodedHref = encodeBase64(originalHref);
+                    link.setAttribute('data-original-href', originalHref);
+                    link.setAttribute('href', `#${encodedHref}`);
+                    // Remove or comment out the line below to keep the original link text
+                    // link.textContent = `Encrypted Link: ${encodedHref}`;
+                }
+            });
+        });
+
+        // Decode the link when clicked
+        document.addEventListener('click', function(event) {
+            let target = event.target;
+            
+            // Traverse up the DOM tree to find the <a> element
+            while (target && target.tagName !== 'A') {
+                target = target.parentElement;
+            }
+
+            if (target && target.hasAttribute('data-original-href')) {
+                event.preventDefault();
+                const encodedHref = target.getAttribute('href').substring(1);
+                const decodedHref = decodeBase64(encodedHref);
+                window.location.href = decodedHref;
+            }
+        });
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.progress-bar');
+            flashMessages.forEach(bar => {
+                bar.style.width = '100%';
+                setTimeout(() => {
+                    bar.style.width = '0%';
+                }, 10); // Start shrinking after a short delay
+                setTimeout(() => {
+                    bar.parentElement.remove();
+                }, 5010); // Remove after 5 seconds
+            });
+        });
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block admin_content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Warehouse Reports</h2>
+
+    <!-- Download Report Options -->
+    <div class="mb-4">
+        <form action="{{ url_for('download_report') }}" method="get" class="flex items-center space-x-4">
+            <label for="format" class="block text-sm font-medium text-gray-700">Select Report Format:</label>
+            <select name="format" id="format" class="mt-1 block w-40 pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                <option value="csv">CSV</option>
+                <option value="html">HTML</option>
+            </select>
+            <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 shadow-sm">
+                <i class="fas fa-download mr-2"></i>Download Report
+            </button>
+        </form>
+    </div>
+
+    <!-- Reports Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Total Products -->
+        <a href="{{ url_for('view_inventory') }}" class="bg-blue-500 text-white rounded-lg shadow p-6 flex items-center hover:bg-blue-600 transition-colors">
+            <div class="p-3 rounded-full bg-blue-700 mr-4">
+                <i class="fas fa-box-open text-2xl"></i>
+            </div>
+            <div>
+                <p class="text-sm">Total Products</p>
+                <p class="text-2xl font-semibold">{{ total_products }}</p>
+            </div>
+        </a>
+
+        <!-- Alerts Summary -->
+        <div class="bg-red-500 text-white rounded-lg shadow p-6 cursor-pointer" onclick="openAlertModal()">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-700 mr-4">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm">Alerts</p>
+                    <p class="text-2xl font-semibold">{{ alerts }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakdown Charts -->
+    <div class="grid grid-cols-1 gap-6 mb-8">
+        <!-- Model Breakdown (Full Width) -->
+        <div class="bg-white rounded-lg shadow p-4 h-80 overflow-hidden" style="padding-bottom: 2rem;">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Products by Model</h3>
+            <canvas id="modelChart" class="w-full h-full"></canvas>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Color Breakdown -->
+        <div class="bg-white rounded-lg shadow p-4 h-64 overflow-hidden">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Products by Color</h3>
+            <canvas id="colorChart" class="w-full h-full"></canvas>
+        </div>
+        <!-- Memory Breakdown -->
+        <div class="bg-white rounded-lg shadow p-4 h-64 overflow-hidden">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Products by Memory</h3>
+            <canvas id="memoryChart" class="w-full h-full"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div id="alertModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-3/4 md:w-1/2">
+        <div class="flex justify-between items-center border-b p-4">
+            <h3 class="text-lg font-semibold">Items with Invalid Attributes</h3>
+            <button onclick="closeAlertModal()" class="text-gray-600 hover:text-gray-900">&times;</button>
+        </div>
+        <div class="p-4">
+            {% if alert_items %}
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr>
+                            <th class="py-2">Model</th>
+                            <th class="py-2">Color</th>
+                            <th class="py-2">Memory</th>
+                            <th class="py-2">Serial Number</th>
+                            <th class="py-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in alert_items %}
+                        <tr>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.model not in item.VALID_MODELS else 'bg-green-100' }}">{{ item.model }}</td>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.color not in item.VALID_COLORS else 'bg-green-100' }}">{{ item.color }}</td>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.memory not in item.VALID_MEMORIES else 'bg-green-100' }}">{{ item.memory }}</td>
+                            <td class="border px-4 py-2 {{ 'bg-red-100' if item.serial_number|length != 11 else 'bg-green-100' }}">
+                                {{ item.serial_number }}
+                            </td>
+                            <td class="border px-4 py-2">
+                                {% if current_user.has_role('admin') %}
+                                    <button onclick="openEditModal({{ item.id }}, '{{ item.model }}', '{{ item.color }}', '{{ item.memory }}', '{{ item.serial_number }}')" class="bg-blue-500 text-white px-2 py-1 rounded">Edit</button>
+                                    <button onclick="deleteItem({{ item.id }})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                                {% else %}
+                                    <span class="text-gray-500">No actions available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="flex items-center justify-center text-green-500">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>No alerts or issues. Everything is running smoothly!</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Model Breakdown Chart
+    var ctxModel = document.getElementById('modelChart').getContext('2d');
+    var modelChart = new Chart(ctxModel, {
+        type: 'bar',
+        data: {
+            labels: [{% for model, count in model_breakdown %}'{{ model }}',{% endfor %}],
+            datasets: [{
+                label: 'Number of Products',
+                data: [{% for model, count in model_breakdown %}{{ count }},{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    bottom: 20
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 45,
+                        minRotation: 0
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: 'rgb(54, 162, 235)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Color Breakdown Chart
+    var ctxColor = document.getElementById('colorChart').getContext('2d');
+    var colorChart = new Chart(ctxColor, {
+        type: 'pie',
+        data: {
+            labels: [{% for color, count in color_breakdown %}'{{ color }}',{% endfor %}],
+            datasets: [{
+                data: [{% for color, count in color_breakdown %}{{ count }},{% endfor %}],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(255,99,132,1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1, // Square aspect ratio for pie chart
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        color: 'rgb(54, 162, 235)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Memory Breakdown Chart
+    var ctxMemory = document.getElementById('memoryChart').getContext('2d');
+    var memoryChart = new Chart(ctxMemory, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for memory, count in memory_breakdown %}'{{ memory }}',{% endfor %}],
+            datasets: [{
+                data: [{% for memory, count in memory_breakdown %}{{ count }},{% endfor %}],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)',
+                    'rgba(255, 205, 86, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(255, 205, 86, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1, // Square aspect ratio for doughnut chart
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        color: 'rgb(54, 162, 235)'
+                    }
+                }
+            }
+        }
+    });
+
+    function openAlertModal() {
+        document.getElementById('alertModal').classList.remove('hidden');
+    }
+
+    function closeAlertModal() {
+        document.getElementById('alertModal').classList.add('hidden');
+    }
+</script>
+{% endblock %} 
