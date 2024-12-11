@@ -63,7 +63,7 @@ This is a Flask-based web application for managing an inventory of iPhones. It i
 1. **Start the Flask development server:**
 
    ```bash
-   flask run
+   python3 app.py
    ```
 
    The application will be available at `http://127.0.0.1:5000`.
