@@ -26,31 +26,11 @@ instance/
 # Pytest
 .cache/
 
-# IDEs and Editors
-.idea/
-.vscode/
-.sublime-project
-.sublime-workspace
-.spyderproject
-.spyproject
-.ropeproject
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# Alembic
+migrations/versions/*.pyc
 
 # Logs
 *.log
-
-# Alembic
-migrations/versions/*.pyc
 
 # Local environment variables
 .env
@@ -67,7 +47,6 @@ coverage.xml
 # Type Checkers
 .mypy_cache/
 .dmypy.json
-dmypy.json
 .pyre/
 
 # Celery beat schedule file
@@ -81,3 +60,23 @@ celerybeat-schedule
 
 # Vim swap files
 *.swp
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.idea/
+.vscode/
+.sublime-project
+.sublime-workspace
+.spyderproject
+.spyproject
+.ropeproject
