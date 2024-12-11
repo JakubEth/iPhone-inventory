@@ -40,21 +40,7 @@ This is a Flask-based web application for managing an inventory of iPhones. It i
    pip install -r requirements.txt
    ```
 
-4. **Set up the database:**
-
-   - Ensure your database server is running.
-   - Create a new database for the application.
-   - Update the `SQLALCHEMY_DATABASE_URI` in `config.py` with your database connection string.
-
-5. **Initialize the database:**
-
-   ```bash
-   flask db init
-   flask db migrate
-   flask db upgrade
-   ```
-
-6. **Populate the database with sample data:**
+4. **Populate the database with sample data:**
 
    The database will be automatically populated with sample data when you start the application if it's empty.
 
