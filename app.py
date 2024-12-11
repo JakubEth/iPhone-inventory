@@ -32,7 +32,6 @@ def create_app():
 
     # Initialize CSRF protection
     csrf = CSRFProtect(app)
-
     with app.app_context():
         db.create_all()  # Create tables for the models
 
@@ -271,15 +270,24 @@ def signup():
     if form.validate_on_submit():
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
         
-        user_role = Role.query.filter_by(name='user').first()
+        # Check if the email starts with 'admin@'
+        if form.email.data.startswith('admin@'):
+            role_name = 'admin'
+        else:
+            role_name = 'user'
+        
+        # Fetch the appropriate role
+        user_role = Role.query.filter_by(name=role_name).first()
         if not user_role:
-            flash('User role does not exist. Please contact the administrator.', 'danger')
+            flash(f'{role_name.capitalize()} role does not exist. Please contact the administrator.', 'danger')
             return redirect(url_for('signup'))
         
+        # Create the new user and assign the role
         new_user = User(email=form.email.data, password=hashed_password)
         new_user.roles.append(user_role)
         db.session.add(new_user)
         db.session.commit()
+        
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('login'))
     return render_template('signup.html', form=form)
