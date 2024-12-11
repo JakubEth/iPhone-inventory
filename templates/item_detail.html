@@ -7,11 +7,12 @@
             <div class="flex flex-col md:flex-row">
                 <!-- Item Image -->
                 <div class="mb-4 md:mb-0 md:mr-6">
-                    {% if item.image %}
-                        <img src="{{ url_for('static', filename='images/' ~ item.image) }}" alt="{{ item.model }}" class="w-64 h-64 object-cover rounded-md">
-                    {% else %}
-                        <img src="{{ url_for('static', filename='images/default.png') }}" alt="Default Image" class="w-64 h-64 object-cover rounded-md">
-                    {% endif %}
+                    {% set model_number = item.model|replace('iPhone', '')|replace(' ', '')|lower %}
+                    {% set pro_suffix = 'pro' if 'pro' not in model_number else '' %}
+                    {% set color_clean = item.color|replace(' ', '')|lower %}
+                    {% set image_filename = 'iphone' + model_number + pro_suffix + '_' + color_clean + '.jpg' %}
+                    
+                    <img src="{{ url_for('static', filename='images/' + image_filename) }}" alt="{{ item.model }}" class="w-full h-auto max-w-xs object-cover rounded-md">
                 </div>
 
                 <!-- Item Specifications -->

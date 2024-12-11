@@ -1,0 +1,46 @@
+<div class="p-4">
+    <div class="flex flex-col md:flex-row">
+        <!-- Item Image -->
+        <div class="mb-4 md:mb-0 md:mr-6">
+            {% if image_filename %}
+                <img src="{{ url_for('static', filename='images/' + image_filename) }}" alt="{{ item.model }}" class="w-48 h-48 object-contain rounded-md mx-auto">
+            {% else %}
+                <img src="https://via.placeholder.com/256" alt="No Image Available" class="w-48 h-48 object-contain rounded-md mx-auto">
+            {% endif %}
+        </div>
+
+        <!-- Item Specifications -->
+        <div>
+            <h2 class="text-2xl font-bold mb-4">{{ item.model }}</h2>
+            <p class="mb-2"><strong>Color:</strong> {{ item.color }}</p>
+            <p class="mb-2"><strong>Memory:</strong> {{ item.memory }}</p>
+            <p class="mb-2"><strong>Serial Number:</strong> {{ item.serial_number }}</p>
+            <!-- Add other specifications as needed -->
+            
+            {% if current_user.has_role('admin') %}
+                <div class="mt-6 flex space-x-4">
+                    <!-- Edit Button -->
+                    <button 
+                        type="button" 
+                        class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 edit-item-button" 
+                        data-item-id="{{ item.id }}"
+                        data-model="{{ item.model }}"
+                        data-color="{{ item.color }}"
+                        data-memory="{{ item.memory }}"
+                    >
+                        Edit
+                    </button>
+
+                    <!-- Delete Button -->
+                    <button 
+                        type="button" 
+                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 delete-item-button" 
+                        data-item-id="{{ item.id }}" 
+                    >
+                        Delete
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

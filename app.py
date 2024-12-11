@@ -12,6 +12,7 @@ import io
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 from populate_inventory import initialize_inventory
+from flask import abort
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -179,25 +180,34 @@ def delete_product(item_id):
     flash('Product deleted successfully!', 'success')
     return '', 204
 
+def roles_required(*roles):
+    """Decorator to restrict access to users with specific roles."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return login_manager.unauthorized()
+            if not any(current_user.has_role(role) for role in roles):
+                abort(403)  # Forbidden
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@app.errorhandler(403)
+def forbidden(error):
+    return render_template('403.html'), 403
+
+
 # Define routes for user functionalities
 @app.route('/inventory')
 @login_required
+@roles_required('admin', 'user')
 def view_inventory():
-    print(f"Current user roles: {[role.name for role in current_user.roles]}")  # Debugging output
-
-    if not current_user.has_role('admin'):
-        flash('You do not have permission to access this page.', 'danger')
-        return redirect(url_for('index'))
-
     page = request.args.get('page', 1, type=int)
-    per_page = 5  # Number of items per page
-
-    # Fetch items with pagination
-    items_paginated = Item.query.paginate(page=page, per_page=per_page, error_out=False)
-    items = items_paginated.items
-    unique_models = {item.model for item in items}  # Use a set to get unique models
-
-    return render_template('inventory.html', items=items, unique_models=unique_models, pagination=items_paginated)
+    items_paginated = Item.query.paginate(page=page, per_page=20)
+    unique_models = Item.query.with_entities(Item.model).distinct().all()
+    unique_models = [model[0] for model in unique_models]
+    return render_template('inventory.html', items=items_paginated.items, pagination=items_paginated, unique_models=unique_models)
 
 @app.route('/search', methods=['GET'])
 @login_required
@@ -367,24 +377,15 @@ def log_action(user_id, action, details=None):
 
 @app.route('/item/<serial_number>', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin', 'user')
 def item_detail(serial_number):
     item = Item.query.filter_by(serial_number=serial_number).first_or_404()
-
-    if request.method == 'POST':
-        if not current_user.has_role('admin'):
-            flash('You do not have permission to perform this action.', 'error')
-            return redirect(url_for('item_detail', serial_number=serial_number))
-        
-        if 'delete' in request.form:
-            db.session.delete(item)
-            db.session.commit()
-            flash('Item deleted successfully.', 'success')
-            return redirect(url_for('search'))
-        elif 'edit' in request.form:
-            # Handle edit logic here or redirect to an edit page
-            return redirect(url_for('edit_item', serial_number=serial_number))
-
-    return render_template('item_detail.html', item=item)
+    # Assign image filename based on model and color
+    model_number = item.model.replace('iPhone', '').replace(' ', '').lower()
+    pro_suffix = 'pro' if 'pro' in item.model.lower() else ''
+    color_clean = item.color.replace(' ', '').lower()
+    image_filename = f'iphone{model_number}{pro_suffix}_{color_clean}.jpg'
+    return render_template('item_detail.html', item=item, image_filename=image_filename)
 
 @app.route('/reports')
 @login_required
@@ -552,6 +553,48 @@ def terms_of_service():
 @app.route('/privacy_policy')
 def privacy_policy():
     return render_template('privacy_policy.html')
+
+@app.route('/item/<serial_number>/details', methods=['GET'])
+@login_required
+def item_details(serial_number):
+    item = Item.query.filter_by(serial_number=serial_number).first_or_404()
+    
+    # Construct image filename based on your naming convention
+    model_number = item.model.replace('iPhone', '').replace(' ', '').lower()
+    pro_suffix = 'pro' if 'pro' not in model_number else ''
+    color_clean = item.color.replace(' ', '').lower()
+    image_filename = f'iphone{model_number}{pro_suffix}_{color_clean}.jpg'
+    
+    return render_template('item_detail_modal.html', item=item, image_filename=image_filename)
+
+@app.route('/products/<int:item_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_product_route(item_id):
+    item = Item.query.get_or_404(item_id)
+    form = ProductForm(obj=item)  # Initialize the form with the item's current data
+
+    if form.validate_on_submit():
+        item.model = form.model.data
+        item.color = form.color.data
+        item.memory = form.memory.data
+        item.serial_number = form.serial_number.data
+        db.session.commit()
+        log_action(current_user.id, 'Edit Product', f'Edited product {item}')
+        flash('Product updated successfully!', 'success')
+        return redirect(url_for('view_inventory'))
+
+    return render_template('edit_product_form.html', form=form, item=item, image_filename=f'iphone{item.model.lower().replace(" ", "")}_{item.color.lower()}.jpg')
+
+@app.route('/delete_product/<int:item_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_product_route(item_id):
+    item = Item.query.get_or_404(item_id)
+    db.session.delete(item)
+    db.session.commit()
+    log_action(current_user.id, 'Delete Product', f'Deleted product {item}')
+    return '', 204  # No Content
 
 if __name__ == '__main__':
     initialize_inventory(app, db, Item)  # Pass the app, db, and Item to the function

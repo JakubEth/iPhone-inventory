@@ -1,0 +1,94 @@
+<form id="productForm" method="POST" action="{{ url_for('edit_product_route', item_id=item.id) }}" class="space-y-6">
+    {{ form.hidden_tag() }}
+    
+    <!-- Model Selection -->
+    <div>
+        <label class="block text-sm font-medium text-gray-700">Model</label>
+        <div class="mt-1 flex items-center justify-center space-x-2">
+            <button type="button" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300" onclick="prevSlide()">&#10094;</button>
+            <img id="modelImage" src="{{ url_for('static', filename='images/' + image_filename) }}" alt="iPhone Model" class="w-32 h-32 object-contain rounded-md mx-auto">
+            <button type="button" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300" onclick="nextSlide()">&#10095;</button>
+        </div>
+        <p id="modelName" class="mt-2 text-center text-sm font-medium text-gray-700">{{ item.model }}</p>
+        <input type="hidden" name="model" id="modelInput" value="{{ item.model }}">
+    </div>
+    
+    <!-- Color Selection -->
+    <div>
+        <label class="block text-sm font-medium text-gray-700">Color</label>
+        <div class="mt-2 flex space-x-4 justify-center">
+            <div 
+                id="colorBlack" 
+                class="w-10 h-10 bg-black border-2 cursor-pointer rounded-full hover:scale-105 transition-transform border-gray-300 {{ 'border-blue-500' if item.color == 'Black' else '' }}" 
+                onclick="selectColor('Black')"
+                title="Black"
+            ></div>
+            <div 
+                id="colorRed" 
+                class="w-10 h-10 bg-red-500 border-2 cursor-pointer rounded-full hover:scale-105 transition-transform border-gray-300 {{ 'border-blue-500' if item.color == 'Red' else '' }}" 
+                onclick="selectColor('Red')"
+                title="Red"
+            ></div>
+            <div 
+                id="colorWhite" 
+                class="w-10 h-10 bg-white border-2 cursor-pointer rounded-full hover:scale-105 transition-transform border-gray-300 {{ 'border-blue-500' if item.color == 'White' else '' }}" 
+                onclick="selectColor('White')"
+                title="White"
+            ></div>
+        </div>
+        <p id="colorName" class="mt-2 text-center text-sm font-medium text-gray-700">Selected Color: {{ item.color }}</p>
+        <input type="hidden" name="color" id="colorInput" value="{{ item.color }}">
+    </div>
+    
+    <!-- Memory Selection -->
+    <div>
+        <label class="block text-sm font-medium text-gray-700">Memory</label>
+        <div class="mt-2 flex space-x-4 justify-center">
+            <div 
+                id="memory64GB" 
+                class="w-20 h-10 bg-gray-200 border-2 cursor-pointer flex items-center justify-center rounded-md hover:bg-gray-300 transition-transform border-gray-300 {{ 'border-blue-500' if item.memory == '64GB' else '' }}" 
+                onclick="selectMemory('64GB')"
+            >
+                64GB
+            </div>
+            <div 
+                id="memory128GB" 
+                class="w-20 h-10 bg-gray-200 border-2 cursor-pointer flex items-center justify-center rounded-md hover:bg-gray-300 transition-transform border-gray-300 {{ 'border-blue-500' if item.memory == '128GB' else '' }}" 
+                onclick="selectMemory('128GB')"
+            >
+                128GB
+            </div>
+            <div 
+                id="memory256GB" 
+                class="w-20 h-10 bg-gray-200 border-2 cursor-pointer flex items-center justify-center rounded-md hover:bg-gray-300 transition-transform border-gray-300 {{ 'border-blue-500' if item.memory == '256GB' else '' }}" 
+                onclick="selectMemory('256GB')"
+            >
+                256GB
+            </div>
+            <div 
+                id="memory512GB" 
+                class="w-20 h-10 bg-gray-200 border-2 cursor-pointer flex items-center justify-center rounded-md hover:bg-gray-300 transition-transform border-gray-300 {{ 'border-blue-500' if item.memory == '512GB' else '' }}" 
+                onclick="selectMemory('512GB')"
+            >
+                512GB
+            </div>
+        </div>
+        <p id="memoryName" class="mt-2 text-center text-sm font-medium text-gray-700">Selected Memory: {{ item.memory }}</p>
+        <input type="hidden" name="memory" id="memoryInput" value="{{ item.memory }}">
+    </div>
+    
+    <!-- Serial Number Input -->
+    <div>
+        <label for="serial_number" class="block text-sm font-medium text-gray-700">Serial Number</label>
+        {{ form.serial_number(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm", maxlength="11", placeholder="Enter Serial Number") }}
+        {% if form.serial_number.errors %}
+            <p class="mt-2 text-sm text-red-600">{{ form.serial_number.errors[0] }}</p>
+        {% endif %}
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="flex justify-end space-x-4">
+        {{ form.submit(class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+        <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400" onclick="closeModal('editProductModal')">Cancel</button>
+    </div>
+</form> 
